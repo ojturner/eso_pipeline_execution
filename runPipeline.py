@@ -1,4 +1,4 @@
-#Don't need to import all of the same things which are imported in the class. Done already.
+
 
 #import the relevant modules
 import os, sys
@@ -10,6 +10,8 @@ sys.path.append('/Users/owenturner/Documents/PhD/KMOS/Analysis_Pipeline/Python_c
 from pipelineClass import pipelineOps
 
 ############################################################################################
+#NEED TO THINK OF CLEVERER WAYS OF GENERATING THE required files at each stage, and for passing 
+#default arguments via a parser. 
 #THIS IS A SCRIPTED SERIES OF COMMANDS. THE HARD WORK IS DONE IN THE CLASS AND THE RECIPES
 #This file will contain the series of steps required to go between the raw data frames and 
 #the reduced science data cubes using the kmos analysis pipeline and my manual additions. 
@@ -33,10 +35,21 @@ pipe_methods = pipelineOps()
 #NAMES OF THE SOF FILES 
 dark_sof = 'dark_frames.sof'
 flatfield_sof = 'flatfield.sof'
+arc_sof = 'arc.sof'
+illum_cor_sof = 'illum_cor.sof'
+std_star_sof = 'std_star.sof'
+sci_reduc_sof = 'sci_reduc.sof'
+
+#List of fits files for manual correction 
+object_names = 'object_names.txt'
+corrected_object_names = 'corrected_object_names.txt'
+
 
 #Make initial check to see if the files exist 
-if ((not (os.path.isfile(dark_sof))) or (not (os.path.isfile(flatfield_sof)))):
-	raise ValueError('One or more .sof files could not be found')
+if ((not (os.path.isfile(dark_sof))) or (not (os.path.isfile(flatfield_sof))) or (not (os.path.isfile(sci_reduc_sof))) \
+ or (not (os.path.isfile(arc_sof))) or (not (os.path.isfile(std_star_sof)))\
+ or (not (os.path.isfile(corrected_object_names))) or (not (os.path.isfile(object_names)))):
+	raise ValueError('One or more .sof files or object lists could not be found')
 
 
 ##########################################
@@ -46,6 +59,8 @@ if ((not (os.path.isfile(dark_sof))) or (not (os.path.isfile(flatfield_sof)))):
 #In the sof, require at least 5 dark frames of the same exp time.
 ##########################################
 
+print 'Computing dark frames'
+
 os.system('esorex kmos_dark %s' % dark_sof)
 
 #Generats the two files master_dark.fits and badpixe_dark.fits that are used 
@@ -53,6 +68,8 @@ os.system('esorex kmos_dark %s' % dark_sof)
 
 #We want to grow the badpixel mask, to account for the 
 #pixels surrounding the bad ones which are also saturated 
+
+print 'Extending bad pixel mask'
 
 pipe_methods.badPixelextend(badpmap='badpixel_dark.fits')
 
@@ -67,10 +84,91 @@ pipe_methods.badPixelextend(badpmap='badpixel_dark.fits')
 #3 files for each of the 6 different rotator angles
 ###################################################
 
+print 'Computing flat fields for the different potato angles'
+
 os.system('esorex kmos_flat %s' % flatfield_sof)
 
 ####################################################
 #STEP 3: ARCS
 #
 #Required .sof filename: arc.sof
+##################################################
+
+print 'Calibrating the wavelength of the pixels'
+
+os.system('esorex kmos_wave_cal %s' % arc_sof)
+
+#####################################################
+#STEP 4: ILLUMINATION CORRECTION (Optional)
 #
+#Required .sof filename: illum_cor.sof
+#####################################################
+
+#print 'Attempting to create illumination correction'
+
+#os.system('esorex kmos_illumination %s' % illum_cor_sof)
+
+#######################################################
+#STEP 5: STANDARD STARS
+#
+#Required .sof filename std_star.sof
+#######################################################
+
+print 'Calibrating Standard Stars'
+
+os.system('esorex kmo_std_star %s' % std_star_sof)
+
+#At this stage we've reached the end of the calibration. Ready for correcting  
+#the readout column noise and performing the sub-pixel alignment
+
+#########################################################
+#STEP 6: READOUT COLUMN NOISE
+#
+#Required - list of object and skyfiles piped from dfits 
+#called object_names.txt
+#########################################################
+
+print 'Correcting for readout column bias'
+
+pipe_methods.applyCorrection(object_names, 'badpixel_dark_Added.fits', 'lcal_YJYJYJ.fits')
+
+########################################################
+#STEP 7: SHIFT AND ALIGN
+#
+#Required - list of corrected files from above 
+#called corrected_object_names.txt 
+#Be sure before going this far - this step will take ages
+#There are some specifiable things in this function. 
+#Later on I'll look at adding some options and variables 
+#to this part of the code using an argument parser
+########################################################
+
+print 'Shifting and alligning all images - this will take some time'
+
+pipe_methods.applyShiftAllExtensions(fileList = corrected_object_names, badpmap='badpixel_dark_Added.fits', \
+  	 vertSegments=1, horSegments=1, interp_type='spline3', \
+  	 stepsize=0.01, xmin=-0.1, xmax=0.1, ymin=-0.1, ymax=0.1)
+
+###########################################################
+
+#######################################################################
+#SCIENCE REDUCTION: Use everything we've made and create the data cubes
+#
+#Required: reduction sof sci_reduc.sof
+#This file will contain all the corrected and shifted observations 
+#produced by the above two manual recipes. Make sure they have the correct 
+#names in the .sof file.
+#Also will move directory into science folder 
+#Must have a folder called Science_Output in the directory above 
+#the callibration directory
+########################################################################
+
+print 'Starting Data Cube Reconstruction'
+
+os.system('up')
+os.system('cd Sci*')
+
+os.system('kmo_sci_red %s' % sci_reduc_sof)
+
+#Should all work given that the correct .sof files are given and that these contain the right things 
+#Need to think about automatically generating these and the object names later. 
