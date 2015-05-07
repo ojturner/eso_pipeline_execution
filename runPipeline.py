@@ -60,6 +60,12 @@ if raw_input('Are you happy with the values of the directory variables?\nKMOS_SC
 else:
 	raise ValueError('Did Not Change directory variables... Quitting')
 
+#Get the values of the directory variables 
+calib_dir = os.environ['KMOS_CALIB']
+raw_dir = os.environ['KMOS_RAW']
+science_dir = os.environ['KMOS_SCIENCE']
+dyn_dir = os.environ['KMOS_DYN_CALIBRATIONS']
+
 #First find the grating ID of one of the object,sky files in the $KMOS_RAW directory
 #This will be used later on in the script to construct the correct .sof files  
 #Write out the types of the raw files to the log 
@@ -74,20 +80,71 @@ obj_names = []
 for entry in tupe:
     for i in range(len(entry)):
         if entry[i].find('OBJECT,SKY') != -1:
-            zip_names.append(entry)
-            #Create the object_names.txt file
-            #obj_names_tup = (entry[0], entry[3])
-            #obj_names.append(obj_names_tup)
+			zip_names.append(entry)
+            #Append only the names of these files to the obj_names vector
+			obj_names.append(entry[0])
+#create a new temporary directory for the object,sky files 
+if os.path.isdir('temp/'):
+	os.system('rm -rf temp/')
+os.system('mkdir temp/')
+#make sure that only the raw images make it into the object_names.txt file
+corr_list = []
+#loop around the obj_names and check for the word 'Corrected'
+for item in obj_names:
+	if item.find('Corrected') != -1:
+		corr_list.append(item)
+#Now remove from the obj_names array any of the flagged files 
+for item in corr_list:
+	obj_names.remove(item)
+#obj_names should now contain only the raw object,sky files 
+#copy the object,sky files into this temporary directory
+for item in obj_names:
+	os.system('cp %s temp/' % item)
+#Now simply pipe the output from dfits to the object_names.txt file
+if os.path.isfile('temp.txt'):
+	os.system('rm temp.txt')
+
+os.system('dfits temp/*.fits | fitsort ocs.arm1.type >> temp.txt')
+
+#Stupidly this also leaves the directory in the output
+#Need to reload the temporary file, change the occurence of to the $KMOS_RAW directory
+object_names_Table = np.loadtxt('temp.txt', dtype='str')
+new_list = []
+sky_list = []
+for i in range(len(object_names_Table)):
+	temp_new_list = []
+	for j in range(len(object_names_Table[i])):
+		newString = object_names_Table[i][j].replace('temp/', raw_dir + '/')
+		temp_new_list.append(newString)
+		if object_names_Table[i][j] == 'S':
+			sky_list.append(object_names_Table[i][0])
+	new_list.append(temp_new_list)
+
+for i in range(len(sky_list)):
+	sky_list[i] = sky_list[i][5:]
+print '[INFO]: This is the list of sky_frames: %s' % sky_list
+#Finally ready for writing to the object_names.txt file 
+if os.path.isfile('object_names.txt'):
+	os.system('rm object_names.txt')
+with open('object_names.txt', 'a') as f:
+	for entry in new_list:
+		f.write('%s\t%s\n' % (entry[0], entry[1]))
+#clean up by removing the temporary directory 
+os.system('rm -rf temp/')
+os.system('rm temp.txt')
 
 grating_ID = zip_names[0][2]
 os.system('rm log.txt')
 
-#Write out to the object.txt file
-#if os.path.isfile('object_names.txt'):
-#	os.system('rm object_names.txt')
-#with open('object_names.txt', 'a') as f:
-#	for entry in obj_names:
-#		f.write('%s\t%s\n' % (entry[0], entry[1]))
+#Apply initial subtraction, placing files in a sub-directory within the raw folder 
+sub_dir_name = raw_dir + '/Subtracted'
+if os.path.isdir(sub_dir_name):
+	os.system('rm -rf %s' % sub_dir_name)
+os.system('mkdir %s' % sub_dir_name) 
+#Apply the subtraction method 
+pipe_methods.applySubtraction('object_names.txt')
+#Move the created files into the subtracted directory 
+os.system('mv $KMOS_RAW/*Subtracted.fits %s' % sub_dir_name)
 
 
 #Happy that directory variables are there and that they are pointing to the right place 
@@ -121,9 +178,9 @@ with open('dark.sof', 'a') as f:
 		f.write('%s\t%s\n' % (entry[0], entry[1]))
 os.system('rm log.txt')
 
-print 'Computing dark frames'
+print '[INFO]: Computing dark frames'
 
-#os.system('esorex kmos_dark dark.sof')
+os.system('esorex kmos_dark dark.sof')
 
 #Generates the two files master_dark.fits and badpixel_dark.fits that are used 
 #By the flatfield recipe
@@ -131,7 +188,7 @@ print 'Computing dark frames'
 #We want to grow the badpixel mask, to account for the 
 #pixels surrounding the bad ones which are also saturated 
 
-print 'Extending bad pixel mask'
+print '[INFO]: Extending bad pixel mask'
 
 pipe_methods.badPixelextend(badpmap='badpixel_dark.fits')
 
@@ -177,9 +234,9 @@ with open('flat.sof', 'a') as f:
 	f.write('badpixel_dark_Added.fits\tBADPIXEL_DARK')
 
 
-print 'Computing flat fields for the different potato angles'
+print '[INFO]: Computing flat fields for the different potato angles'
 
-#os.system('esorex kmos_flat flat.sof')
+os.system('esorex kmos_flat flat.sof')
 
 ####################################################
 #STEP 3: ARCS
@@ -223,7 +280,6 @@ with open('wave.sof', 'a') as f:
 os.system('rm log.txt')
 
 #Also add the calibration products to the wave.sof
-calib_dir = os.environ['KMOS_CALIB']
 #This is the first time the grating dependence comes into play 
 if grating_ID == 'H': 
 	neon_name = calib_dir + '/kmos_ar_ne_list_h.fits'
@@ -283,9 +339,9 @@ with open('wave.sof', 'a') as f:
 	
 
 
-print 'Computing wavelength calibration'
+print '[INFO]: Computing wavelength calibration'
 
-#os.system('esorex kmos_wave_cal wave.sof')
+os.system('esorex kmos_wave_cal wave.sof')
 
 #####################################################
 #STEP 4: ILLUMINATION CORRECTION (Optional)
@@ -322,11 +378,31 @@ print 'Computing wavelength calibration'
 #called object_names.txt
 #########################################################
 
-print 'Correcting for readout column bias'
-
-
-
+print '[INFO]: Correcting for readout column bias'
+if os.path.isfile('$KMOS_RAW/*Corrected.fits'):
+	os.system('rm $KMOS_RAW/*Corrected.fits')
 pipe_methods.applyCorrection('object_names.txt', 'badpixel_dark_Added.fits', lcal_name)
+#Create corrected directory within the $KMOS_RAW directort
+Corrected_dir_name = raw_dir + '/Corrected'
+if os.path.isdir(Corrected_dir_name):
+	os.system('rm -rf %s' % Corrected_dir_name)
+os.system('mkdir %s' % Corrected_dir_name)
+#Move all of the newly created Corrected files into this directory 
+os.system('mv $KMOS_RAW/*Corrected.fits %s' % Corrected_dir_name)
+
+#Also copy in the sky frames
+for entry in sky_list:
+	#Doing this for ease of corrected_object file creation
+	os.system('cp $KMOS_RAW/%s %s' % (entry, Corrected_dir_name))
+#Create the corrected object names file 
+#Now simple to create the corrected_object_names.txt file
+if os.path.isfile('corrected_object_names.txt'):
+	os.system('rm corrected_object_names.txt')
+
+os.system('dfits $KMOS_RAW/Corrected/*.fits | fitsort ocs.arm1.type >> corrected_object_names.txt')
+#NOTE THIS WORKS WELL SO LONG AS THE DIRECTORY STRUCTURE ISN'T TOO LONG
+#Now also apply the subtraction to populate the /Corrected directory with these files
+pipe_methods.applySubtraction('corrected_object_names.txt')
 
 ########################################################
 #STEP 7: SHIFT AND ALIGN
@@ -339,12 +415,45 @@ pipe_methods.applyCorrection('object_names.txt', 'badpixel_dark_Added.fits', lca
 #to this part of the code using an argument parser
 ########################################################
 
-#print 'Shifting and alligning all images - this will take some time'
+print '[INFO]: Shifting and alligning all images - this will take some time'
+#remove files which could cause issues should they exist
+if os.path.isfile('temp_shift.fits'):
+	os.system('rm temp*')
+if os.path.isfile('$KMOS_RAW/*Shifted.fits'):
+	os.system('rm $KMOS_RAW/*Shifted.fits')
+#Apply the shift 
+pipe_methods.applyShiftAllExtensionsMin(fileList = 'corrected_object_names.txt', badpmap='badpixel_dark_Added.fits', \
+  	 vertSegments=1, horSegments=1, interp_type='spline3')
+#This has created the shifted files in the /Corrected directory
+#Follow the exact same steps as above to create the shifted directory 
+#And move the create files to here, then apply the subtraction 
+Shifted_dir_name = raw_dir + '/Shifted'
+if os.path.isdir(Shifted_dir_name):
+	os.system('rm -rf %s' % Shifted_dir_name)
+os.system('mkdir %s' % Shifted_dir_name)
+#Move all of the newly created Shifted files into this directory 
+os.system('mv %s/*Shifted.fits %s' % (Corrected_dir_name, Shifted_dir_name))
 
-#pipe_methods.applyShiftAllExtensionsMin(fileList = corrected_object_names, badpmap='badpixel_dark_Added.fits', \
-#  	 vertSegments=1, horSegments=1, interp_type='spline3')
+#Also copy in the sky frames
+for entry in sky_list:
+	#Doing this for ease of Shifted_object file creation
+	os.system('cp $KMOS_RAW/%s %s' % (entry, Shifted_dir_name))
+#Create the Shifted object names file 
+#Now simple to create the Shifted_object_names.txt file
+if os.path.isfile('shifted_object_names.txt'):
+	os.system('rm shifted_object_names.txt')
 
+os.system('dfits $KMOS_RAW/Shifted/*.fits | fitsort ocs.arm1.type >> shifted_object_names.txt')
+#NOTE THIS WORKS WELL SO LONG AS THE DIRECTORY STRUCTURE ISN'T TOO LONG
+#Now also apply the subtraction to populate the /shifted directory with these files
+pipe_methods.applySubtraction('shifted_object_names.txt')
+
+#Make a plot of the shift results 
+pipe_methods.shiftPlot('Shift_Coords.txt')
 ###########################################################
+#All lists of files now made and objects have been shifted. 
+#Need to think of a way to get the output from frameCheck into 
+#the science directory 
 
 #######################################################################
 #SCIENCE REDUCTION: Use everything we've made and create the data cubes
@@ -358,7 +467,7 @@ pipe_methods.applyCorrection('object_names.txt', 'badpixel_dark_Added.fits', lca
 #the callibration directory
 ########################################################################
 
-#print 'Starting Data Cube Reconstruction'
+print 'Starting Data Cube Reconstruction'
 
 #os.system('up')
 #os.system('cd Science_Output')
