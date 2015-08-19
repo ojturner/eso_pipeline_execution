@@ -218,242 +218,249 @@ waveband_name = calib_dir + '/kmos_wave_band.fits'
 reftable_name = calib_dir + '/kmos_wave_ref_table.fits'
 spec_lookup_name = calib_dir + '/kmos_spec_type.fits'
 
-#Happy that directory variables are there and that they are pointing to the right place 
-#Now change directory to the Calibrations folder and construct the dark sof 
-########################################
+##Happy that directory variables are there and that they are pointing to the right place 
+##Now change directory to the Calibrations folder and construct the dark sof 
+#######################################
 #STEP 1: DARK FRAMES AND BAD PIXEL MAP
 #Created sof name:	dark.sof
-#########################################
-##Write out the types of the raw files to the log 
-#os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
-##reload the log file and only keep those with DARK type 
-#Table = np.loadtxt('log.txt', dtype='str')
-#tupe = zip(Table[:,0], Table[:,1])
-#zip_names = []#
-##Loop around searching for the keyword DARK
-#for entry in tupe:
-#    for i in range(len(entry)):
-#        if entry[i].find('DARK') != -1:
-#            zip_names.append(entry)#
-##Check for existence of dark.sof 
-#if os.path.isfile('dark.sof'):
-#	os.system('rm dark.sof')#
-#with open('dark.sof', 'a') as f:
-#	for entry in zip_names:
-#		f.write('%s\t%s\n' % (entry[0], entry[1]))
-#os.system('rm log.txt')#
-#print '[INFO]: Computing dark frames'#
-#os.system('esorex kmos_dark dark.sof')#
-##Generates the two files master_dark.fits and badpixel_dark.fits that are used 
-##By the flatfield recipe#
-##We want to grow the badpixel mask, to account for the 
-##pixels surrounding the bad ones which are also saturated #
-#print '[INFO]: Extending bad pixel mask'#
-#pipe_methods.badPixelextend(badpmap='badpixel_dark.fits')#
+########################################
+#Write out the types of the raw files to the log 
+os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
+#reload the log file and only keep those with DARK type 
+Table = np.loadtxt('log.txt', dtype='str')
+tupe = zip(Table[:,0], Table[:,1])
+zip_names = []#
+#Loop around searching for the keyword DARK
+for entry in tupe:
+    for i in range(len(entry)):
+        if entry[i].find('DARK') != -1:
+            zip_names.append(entry)#
+#Check for existence of dark.sof 
+if os.path.isfile('dark.sof'):
+	os.system('rm dark.sof')#
+with open('dark.sof', 'a') as f:
+	for entry in zip_names:
+		f.write('%s\t%s\n' % (entry[0], entry[1]))
+os.system('rm log.txt')#
+print '[INFO]: Computing dark frames'#
+os.system('esorex kmos_dark dark.sof')#
+#Generates the two files master_dark.fits and badpixel_dark.fits that are used 
+#By the flatfield recipe#
+#We want to grow the badpixel mask, to account for the 
+#pixels surrounding the bad ones which are also saturated #
+print '[INFO]: Extending bad pixel mask'#
+pipe_methods.badPixelextend(badpmap='badpixel_dark.fits')#
+###################################################
+#STEP 2: FLATFIELDING
+#
+#Required .sof filename: flatfield.sof
+#in the sof require 3 flat,off dpr.type file s
+#and 18 flat,lamp files which correspond to 
+#3 files for each of the 6 different rotator angles
 ####################################################
-##STEP 2: FLATFIELDING
-##
-##Required .sof filename: flatfield.sof
-##in the sof require 3 flat,off dpr.type file s
-##and 18 flat,lamp files which correspond to 
-##3 files for each of the 6 different rotator angles
-#####################################################
-##Play the same game with generating the .sof file
-##Write out the types of the raw files to the log 
-#os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
-##reload the log file and only keep those with DARK type 
-#Table = np.loadtxt('log.txt', dtype='str')
-#tupe = zip(Table[:,0], Table[:,1])
-#zip_names = []#
-##Loop around searching for the keyword DARK
-#for entry in tupe:
-#    for i in range(len(entry)):
-#        if entry[i].find('FLAT,OFF') != -1:
-#			new_entry = (entry[0], str(entry[i].replace('FLAT,OFF', 'FLAT_OFF')))
-#			zip_names.append(new_entry)#
-#        elif entry[i].find('FLAT,LAMP') != -1:
-#			new_entry = (entry[0], str(entry[i].replace('FLAT,LAMP', 'FLAT_ON')))
-#			zip_names.append(new_entry)#
-##Check for existence of flat.sof 
-#if os.path.isfile('flat.sof'):
-#	os.system('rm flat.sof')#
-#with open('flat.sof', 'a') as f:
-#	for entry in zip_names:
-#		f.write('%s\t%s\n' % (entry[0], entry[1]))
-#os.system('rm log.txt')
-##Also add the badpixel_dark_added.fits file to the flat.sof
-#with open('flat.sof', 'a') as f:
-#	f.write('badpixel_dark_Added.fits\tBADPIXEL_DARK')##
-#print '[INFO]: Computing flat fields for the different potato angles'#
-#os.system('esorex kmos_flat flat.sof')#
-#####################################################
-##STEP 3: ARCS
-##
-##Created .sof name: wave.sof
-##Require the products from both the flat and dark recipes 
-##badpixel_dark_Added.fits, badpixel_flat_HHH.fits, 
-##flat_edge_HHH.fits, ycal_HHH.fits, xcal_HHH.fits, 
-##master_flat_HHH.fits
-##AND 6 ARC_ON, 1 ARC_OFF and 3 static calibration 
-##files listed in the document 
+#Play the same game with generating the .sof file
+#Write out the types of the raw files to the log 
+os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
+#reload the log file and only keep those with DARK type 
+Table = np.loadtxt('log.txt', dtype='str')
+tupe = zip(Table[:,0], Table[:,1])
+zip_names = []#
+#Loop around searching for the keyword DARK
+for entry in tupe:
+    for i in range(len(entry)):
+        if entry[i].find('FLAT,OFF') != -1:
+			new_entry = (entry[0], str(entry[i].replace('FLAT,OFF', 'FLAT_OFF')))
+			zip_names.append(new_entry)#
+        elif entry[i].find('FLAT,LAMP') != -1:
+			new_entry = (entry[0], str(entry[i].replace('FLAT,LAMP', 'FLAT_ON')))
+			zip_names.append(new_entry)#
+#Check for existence of flat.sof 
+if os.path.isfile('flat.sof'):
+	os.system('rm flat.sof')#
+with open('flat.sof', 'a') as f:
+	for entry in zip_names:
+		f.write('%s\t%s\n' % (entry[0], entry[1]))
+os.system('rm log.txt')
+#Also add the badpixel_dark_added.fits file to the flat.sof
+with open('flat.sof', 'a') as f:
+	f.write('badpixel_dark_Added.fits\tBADPIXEL_DARK')##
+print '[INFO]: Computing flat fields for the different potato angles'#
+os.system('esorex kmos_flat flat.sof')##
+
 ####################################################
-##Play the same game with generating the .sof file
-##Write out the types of the raw files to the log 
-#os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
-##reload the log file and only keep those with DARK type 
-#Table = np.loadtxt('log.txt', dtype='str')
-#tupe = zip(Table[:,0], Table[:,1])
-#zip_names = []#
-##Loop around searching for the keyword DARK
-#for entry in tupe:
-#    for i in range(len(entry)):
-#        if entry[i].find('WAVE,OFF') != -1:
-#			new_entry = (entry[0], str(entry[i].replace('WAVE,OFF', 'ARC_OFF')))
-#			zip_names.append(new_entry)#
-#        elif entry[i].find('WAVE,LAMP') != -1:
-#			new_entry = (entry[0], str(entry[i].replace('WAVE,LAMP', 'ARC_ON')))
-#			zip_names.append(new_entry)#
-##Check for existence of flat.sof 
-#if os.path.isfile('wave.sof'):
-#	os.system('rm wave.sof')#
-#with open('wave.sof', 'a') as f:
-#	for entry in zip_names:
-#		f.write('%s\t%s\n' % (entry[0], entry[1]))
-#os.system('rm log.txt')#
-##Also add the calibration products to the wave.sof
-##This is the first time the grating dependence comes into play 
-#with open('wave.sof', 'a') as f:
-#	f.write('%s\tBADPIXEL_FLAT\n' % bpixel_flat_name)
-#	f.write('%s\tFLAT_EDGE\n' % flat_edge_name)
-#	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-#	f.write('%s\tXCAL\n' % xcal_name)
-#	f.write('%s\tYCAL\n' % ycal_name)
-#	f.write('%s\tARC_LIST\n' % neon_name)
-#	f.write('%s\tWAVE_BAND\n' % waveband_name)
-#	f.write('%s\tREF_LINES\n' % reftable_name)
-#	##
-#print '[INFO]: Computing wavelength calibration'#
-#os.system('esorex kmos_wave_cal wave.sof')#
+#STEP 3: ARCS
+#
+#Created .sof name: wave.sof
+#Require the products from both the flat and dark recipes 
+#badpixel_dark_Added.fits, badpixel_flat_HHH.fits, 
+#flat_edge_HHH.fits, ycal_HHH.fits, xcal_HHH.fits, 
+#master_flat_HHH.fits
+#AND 6 ARC_ON, 1 ARC_OFF and 3 static calibration 
+#files listed in the document 
+####################################################
+
+#Play the same game with generating the .sof file
+#Write out the types of the raw files to the log 
+os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
+#reload the log file and only keep those with DARK type 
+Table = np.loadtxt('log.txt', dtype='str')
+tupe = zip(Table[:,0], Table[:,1])
+zip_names = []#
+#Loop around searching for the keyword DARK
+for entry in tupe:
+    for i in range(len(entry)):
+        if entry[i].find('WAVE,OFF') != -1:
+			new_entry = (entry[0], str(entry[i].replace('WAVE,OFF', 'ARC_OFF')))
+			zip_names.append(new_entry)#
+        elif entry[i].find('WAVE,LAMP') != -1:
+			new_entry = (entry[0], str(entry[i].replace('WAVE,LAMP', 'ARC_ON')))
+			zip_names.append(new_entry)#
+#Check for existence of flat.sof 
+if os.path.isfile('wave.sof'):
+	os.system('rm wave.sof')#
+with open('wave.sof', 'a') as f:
+	for entry in zip_names:
+		f.write('%s\t%s\n' % (entry[0], entry[1]))
+os.system('rm log.txt')#
+#Also add the calibration products to the wave.sof
+#This is the first time the grating dependence comes into play 
+with open('wave.sof', 'a') as f:
+	f.write('%s\tBADPIXEL_FLAT\n' % bpixel_flat_name)
+	f.write('%s\tFLAT_EDGE\n' % flat_edge_name)
+	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+	f.write('%s\tXCAL\n' % xcal_name)
+	f.write('%s\tYCAL\n' % ycal_name)
+	f.write('%s\tARC_LIST\n' % neon_name)
+	f.write('%s\tWAVE_BAND\n' % waveband_name)
+	f.write('%s\tREF_LINES\n' % reftable_name)
+	##
+print '[INFO]: Computing wavelength calibration'#
+os.system('esorex kmos_wave_cal wave.sof')##
+
+#####################################################
+#STEP 4: ILLUMINATION CORRECTION (Optional)
+#
+#Required .sof filename: illum_cor.sof
 ######################################################
-##STEP 4: ILLUMINATION CORRECTION (Optional)
-##
-##Required .sof filename: illum_cor.sof
+#Leaving out the illumination correction at the moment 
+#Not an important part of the pipeline
+#print 'Attempting to create illumination correction'#
+#os.system('esorex kmos_illumination %s' % illum_cor_sof)##
+
 #######################################################
-##Leaving out the illumination correction at the moment 
-##Not an important part of the pipeline
-##print 'Attempting to create illumination correction'#
-##os.system('esorex kmos_illumination %s' % illum_cor_sof)#
-########################################################
-##STEP 5: STANDARD STARS
-##
-##Created .sof file star.sof
+#STEP 5: STANDARD STARS
+#
+#Created .sof file star.sof
 #########################################################
-#print '[INFO]: Calibrating Standard Stars'#
-##Check the raw frames directory for the standard star files 
-#os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
-##reload the log file and only keep those with OBJECT,SKY,STD,FLUX type 
-#Table = np.loadtxt('log.txt', dtype='str')
-#tupe = zip(Table[:,0], Table[:,1])
-#zip_names = []#
-##Loop around searching for the keyword OBJECT,SKY,STD,FLUX
-#for entry in tupe:
-#    for i in range(len(entry)):
-#        if entry[i].find('OBJECT,SKY,STD,FLUX') != -1:
-#			new_entry = (entry[0], str(entry[i].replace('OBJECT,SKY,STD,FLUX', 'STD')))
-#			zip_names.append(new_entry)##
-##Check for existence of star.sof 
-#if os.path.isfile('star.sof'):
-#	os.system('rm star.sof')#
-#with open('star.sof', 'a') as f:
-#	for entry in zip_names:
-#		f.write('%s\t%s\n' % (entry[0], entry[1]))
-#os.system('rm log.txt')##
-#with open('star.sof', 'a') as f:
-#	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-#	f.write('%s\tXCAL\n' % xcal_name)
-#	f.write('%s\tYCAL\n' % ycal_name)
-#	f.write('%s\tLCAL\n' % lcal_name)
-#	f.write('%s\tWAVE_BAND\n' % waveband_name)
-#	f.write('%s\tSPEC_TYPE_LOOKUP\n' % spec_lookup_name)
-#	f.write('%s\tATMOS_MODEL\n' % atmos_name)
-##Now there are also solar spectra which can be used to aid the correction. 
-##This is useful in the K, H and HK bands. So add these conditionally now 
-##depending on the grating that is being passed through the pipeline
-#if grating_ID == 'H':
-#	solar_name = calib_dir + '/kmos_solar_h_2400.fits'
-#	with open('star.sof', 'a') as f:
-#		f.write('%s\tSOLAR_SPEC\n' % solar_name)
-#elif grating_ID == 'K':
-#	solar_name = calib_dir + '/kmos_solar_k_1700.fits'
-#	with open('star.sof', 'a') as f:
-#		f.write('%s\tSOLAR_SPEC\n' % solar_name)
-#elif grating_ID == 'HK':
-#	solar_name = calib_dir + '/kmos_solar_hk_1100.fits'
-#	with open('star.sof', 'a') as f:
-#		f.write('%s\tSOLAR_SPEC\n' % solar_name)
-##star.sof now ready compute the telluric correction
-#print '[INFO]: Computing Standard Star calibration'
-#os.system('esorex kmos_std_star star.sof')#
-##At this stage we've reached the end of the calibration. Ready for correcting  
-##the readout column noise and performing the sub-pixel alignment
-##########################################################
-##STEP 6: READOUT COLUMN NOISE
-##
-##Required - list of object and skyfiles piped from dfits 
-##called object_names.txt
+
+print '[INFO]: Calibrating Standard Stars'#
+#Check the raw frames directory for the standard star files 
+os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')#
+#reload the log file and only keep those with OBJECT,SKY,STD,FLUX type 
+Table = np.loadtxt('log.txt', dtype='str')
+tupe = zip(Table[:,0], Table[:,1])
+zip_names = []#
+#Loop around searching for the keyword OBJECT,SKY,STD,FLUX
+for entry in tupe:
+    for i in range(len(entry)):
+        if entry[i].find('OBJECT,SKY,STD,FLUX') != -1:
+			new_entry = (entry[0], str(entry[i].replace('OBJECT,SKY,STD,FLUX', 'STD')))
+			zip_names.append(new_entry)##
+#Check for existence of star.sof 
+if os.path.isfile('star.sof'):
+	os.system('rm star.sof')#
+with open('star.sof', 'a') as f:
+	for entry in zip_names:
+		f.write('%s\t%s\n' % (entry[0], entry[1]))
+os.system('rm log.txt')##
+with open('star.sof', 'a') as f:
+	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+	f.write('%s\tXCAL\n' % xcal_name)
+	f.write('%s\tYCAL\n' % ycal_name)
+	f.write('%s\tLCAL\n' % lcal_name)
+	f.write('%s\tWAVE_BAND\n' % waveband_name)
+	f.write('%s\tSPEC_TYPE_LOOKUP\n' % spec_lookup_name)
+	f.write('%s\tATMOS_MODEL\n' % atmos_name)
+#Now there are also solar spectra which can be used to aid the correction. 
+#This is useful in the K, H and HK bands. So add these conditionally now 
+#depending on the grating that is being passed through the pipeline
+if grating_ID == 'H':
+	solar_name = calib_dir + '/kmos_solar_h_2400.fits'
+	with open('star.sof', 'a') as f:
+		f.write('%s\tSOLAR_SPEC\n' % solar_name)
+elif grating_ID == 'K':
+	solar_name = calib_dir + '/kmos_solar_k_1700.fits'
+	with open('star.sof', 'a') as f:
+		f.write('%s\tSOLAR_SPEC\n' % solar_name)
+elif grating_ID == 'HK':
+	solar_name = calib_dir + '/kmos_solar_hk_1100.fits'
+	with open('star.sof', 'a') as f:
+		f.write('%s\tSOLAR_SPEC\n' % solar_name)
+#star.sof now ready compute the telluric correction
+print '[INFO]: Computing Standard Star calibration'
+os.system('esorex kmos_std_star star.sof')#
+#At this stage we've reached the end of the calibration. Ready for correcting  
+#the readout column noise and performing the sub-pixel alignment#
+
+#########################################################
+#STEP 6: READOUT COLUMN NOISE
+#
+#Required - list of object and skyfiles piped from dfits 
+#called object_names.txt
 ###########################################################
-#print '[INFO]: Correcting for readout column bias'
-#if os.path.isfile('$KMOS_RAW/*Corrected.fits'):
-#	os.system('rm $KMOS_RAW/*Corrected.fits')
-#pipe_methods.applyCorrection('object_names.txt', 'badpixel_dark_Added.fits', lcal_name)
-##Create corrected directory within the $KMOS_RAW directort
-#Corrected_dir_name = raw_dir + '/Corrected'
-#if os.path.isdir(Corrected_dir_name):
-#	os.system('rm -rf %s' % Corrected_dir_name)
-#os.system('mkdir %s' % Corrected_dir_name)
-##Move all of the newly created Corrected files into this directory 
-#os.system('mv $KMOS_RAW/*Corrected.fits %s' % Corrected_dir_name)
-##Also copy in the sky frames
-#for entry in sky_list:
-#	#Doing this for ease of corrected_object file creation
-#	os.system('cp $KMOS_RAW/%s %s' % (entry, Corrected_dir_name))
-##Create the corrected object names file 
-##Now simple to create the corrected_object_names.txt file
-#if os.path.isfile('corrected_object_names.txt'):
-#	os.system('rm corrected_object_names.txt')
-#os.system('dfits $KMOS_RAW/Corrected/*.fits | fitsort ocs.arm1.type >> corrected_object_names.txt')
-##NOTE THIS WORKS WELL SO LONG AS THE DIRECTORY STRUCTURE ISN'T TOO LONG
-##Now also apply the subtraction to populate the /Corrected directory with these files
-#pipe_methods.applySubtraction('corrected_object_names.txt')
+
+print '[INFO]: Correcting for readout column bias'
+if os.path.isfile('$KMOS_RAW/*Corrected.fits'):
+	os.system('rm $KMOS_RAW/*Corrected.fits')
+pipe_methods.applyCorrection('object_names.txt', 'badpixel_dark_Added.fits', lcal_name)
+#Create corrected directory within the $KMOS_RAW directort
+Corrected_dir_name = raw_dir + '/Corrected'
+if os.path.isdir(Corrected_dir_name):
+	os.system('rm -rf %s' % Corrected_dir_name)
+os.system('mkdir %s' % Corrected_dir_name)
+#Move all of the newly created Corrected files into this directory 
+os.system('mv $KMOS_RAW/*Corrected.fits %s' % Corrected_dir_name)
+#Also copy in the sky frames
+for entry in sky_list:
+	#Doing this for ease of corrected_object file creation
+	os.system('cp $KMOS_RAW/%s %s' % (entry, Corrected_dir_name))
+#Create the corrected object names file 
+#Now simple to create the corrected_object_names.txt file
+if os.path.isfile('corrected_object_names.txt'):
+	os.system('rm corrected_object_names.txt')
+os.system('dfits $KMOS_RAW/Corrected/*.fits | fitsort ocs.arm1.type >> corrected_object_names.txt')
+#NOTE THIS WORKS WELL SO LONG AS THE DIRECTORY STRUCTURE ISN'T TOO LONG
+#Now also apply the subtraction to populate the /Corrected directory with these files
+pipe_methods.applySubtraction('corrected_object_names.txt')
+#####################################################
+##STEP 7: SHIFT AND ALIGN#
+##Required - list of corrected files from above 
+##called corrected_object_names.txt 
+##Be sure before going this far - this step will take ages
+##There are some specifiable things in this function. 
+##Later on I'll look at adding some options and variables 
+##to this part of the code using an argument parser
 #######################################################
-#STEP 7: SHIFT AND ALIGN#
-#Required - list of corrected files from above 
-#called corrected_object_names.txt 
-#Be sure before going this far - this step will take ages
-#There are some specifiable things in this function. 
-#Later on I'll look at adding some options and variables 
-#to this part of the code using an argument parser
-#########################################################
 #print '[INFO]: Shifting and alligning all images - this will take some time'
 ##remove files which could cause issues should they exist
 #if os.path.isfile('temp_shift.fits'):
 #	os.system('rm temp*')
 #if os.path.isfile('$KMOS_RAW/*Shifted.fits'):
-#	os.system('rm $KMOS_RAW/*Shifted.fits')
+#	os.system('rm $KMOS_RAW/*Shifted.fits')#
 ####
 ##FUNCTION TO DO ADDITIONAL BAD PIXEL/COSMIC RAY REMOVAL####
-
-##Apply the shift 
+##Apply the shift #
 #pipe_methods.applyShiftAllExtensionsMin(fileList = 'corrected_object_names.txt', badpmap='badpixel_dark_Added.fits', \
 #  	 vertSegments=1, horSegments=1, interp_type='spline3')
 ##This has created the shifted files in the /Corrected directory
 ##Follow the exact same steps as above to create the shifted directory 
-##And move the create files to here, then apply the subtraction 
+##And move the create files to here, then apply the subtraction ##
+
 #Shifted_dir_name = raw_dir + '/Shifted'
 #if os.path.isdir(Shifted_dir_name):
 #	os.system('rm -rf %s' % Shifted_dir_name)
 #os.system('mkdir %s' % Shifted_dir_name)
-#Move all of the newly created Shifted files into this directory 
+##Move all of the newly created Shifted files into this directory 
 #os.system('mv %s/*Shifted.fits %s' % (Corrected_dir_name, Shifted_dir_name))#
 ##Also copy in the sky frames
 #for entry in sky_list:
@@ -463,76 +470,77 @@ spec_lookup_name = calib_dir + '/kmos_spec_type.fits'
 ##Now simple to create the Shifted_object_names.txt file
 #if os.path.isfile('shifted_object_names.txt'):
 #	os.system('rm shifted_object_names.txt')#
-#os.system('dfits $KMOS_RAW/Shifted/*.fits | fitsort ocs.arm1.type >> shifted_object_names.txt')
+#os.system('dfits $KMOS_RAW/Shifted/*.fits | fitsort ocs.arm1.type >> shifted_object_names.txt')##
+
 ##NOTE THIS WORKS WELL SO LONG AS THE DIRECTORY STRUCTURE ISN'T TOO LONG
 ##Now also apply the subtraction to populate the /shifted directory with these files
 #pipe_methods.applySubtraction('shifted_object_names.txt')#
 ##Make a plot of the shift results 
 #pipe_methods.shiftPlot('Shift_Coords.txt')
-##########################################################
-###All lists of files now made and objects have been shifted. 
-###Need to think of a way to get the output from frameCheck into 
-###the science directory #
+########################################################
+#All lists of files now made and objects have been shifted. 
+#Need to think of a way to get the output from frameCheck into 
+#the science directory #
+####################################################################
+#SCIENCE REDUCTION: Use everything we've made and create the data cubes
+#Required: reduction sof sci_reduc.sof
+#This file will contain all the corrected and shifted observations 
+#produced by the above two manual recipes. Make sure they have the correct 
+#names in the .sof file.
+#Also will move directory into science folder 
+#Must have a folder called Science_Output in the directory above 
+#the callibration directory
 ######################################################################
-###SCIENCE REDUCTION: Use everything we've made and create the data cubes
-###Required: reduction sof sci_reduc.sof
-###This file will contain all the corrected and shifted observations 
-###produced by the above two manual recipes. Make sure they have the correct 
-###names in the .sof file.
-###Also will move directory into science folder 
-###Must have a folder called Science_Output in the directory above 
-###the callibration directory
-########################################################################
-###Wipe out the science directory before beginning, this is meant as a complete reset 
+##Wipe out the science directory before beginning, this is meant as a complete reset 
 #os.system('rm -rf $KMOS_SCIENCE/*')
-#print '[INFO]: Creating %s Grating sci_reduc.sof file' % grating_ID
-#if os.path.isfile('sci_reduc.sof'):
-#	os.system('rm sci_reduc.sof')#
-#with open('sci_reduc.sof', 'a') as f:
-#	f.write('%s\tXCAL\n' % xcal_name)
-#	f.write('%s\tYCAL\n' % ycal_name)
-#	f.write('%s\tLCAL\n' % lcal_name)
-#	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-#	#f.write('%s\tTELLURIC\n' % telluric_name)
-#	f.write('%s\tWAVE_BAND\n' % waveband_name)
-#	f.write('%s\tOH_SPEC\n' % oh_name)
-##Grating sof now created - need to create the sky datacubes in the science directory 
-##Have access to the names of the sky files via sky_list 
-#sky_frame_first = raw_dir + '/' + sky_list[0]
-#sky_frame_last = raw_dir + '/' + sky_list[-1]
-##Create a sky-reconstruct sof file 
-#if os.path.isfile('sky_reconstruct.sof'):
-#	os.system('rm sky_reconstruct.sof')
-#with open('sky_reconstruct.sof', 'a') as f:
-#	f.write('%s\tSCIENCE\n' % sky_frame_first)
-#	f.write('%s\tSCIENCE\n' % sky_frame_last)
-#	f.write('%s\tXCAL\n' % xcal_name)
-#	f.write('%s\tYCAL\n' % ycal_name)
-#	f.write('%s\tLCAL\n' % lcal_name)
-#	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-#	f.write('%s\tWAVE_BAND\n' % waveband_name)
-#	f.write('%s\tOH_SPEC\n' % oh_name)
-#print '[INFO]: Reconstructing Both sky cubes'
-##Execute the esorex reconstruct recipe to create this raw sky multi cube 
-#os.system('esorex --output-dir=$KMOS_SCIENCE kmos_sci_red --no_subtract sky_reconstruct.sof')
-##The outputs from this are two file called sci_reconstructed_***.fits in the science directory
-##os.system('mv $KMOS_SCIENCE/cube_science.fits $KMOS_SCIENCE/cube_science_1.fits')
-##remove the sky_reconstruct file 
-#os.system('rm sky_reconstruct.sof')
-##Now have two reconstructed files in the science directory which we combine to give the individual IFU cubes
-##first set the names of the two files 
-#sky_first_combine_name = science_dir + '/sci_reconstructed_' + sky_list[0] 
-#sky_last_combine_name = science_dir + '/sci_reconstructed_' + sky_list[-1]
-##check for existence of combine.sof
-#if os.path.isfile('sky_combine.sof'):
-#	os.system('rm sky_combine.sof')
-#with open('sky_combine.sof', 'a') as f:
-#	f.write('%s\n' % sky_first_combine_name)
-#	f.write('%s' % sky_last_combine_name)
-#print '[INFO]: Combining sky cubes'
-##Execute the KMOS recipe for combining the multi-cubes - save the output to the science directory
-#os.system('esorex --output-dir=$KMOS_SCIENCE kmo_combine --method="header" --edge_nan=TRUE sky_combine.sof')
+print '[INFO]: Creating %s Grating sci_reduc.sof file' % grating_ID
+if os.path.isfile('sci_reduc.sof'):
+	os.system('rm sci_reduc.sof')#
+with open('sci_reduc.sof', 'a') as f:
+	f.write('%s\tXCAL\n' % xcal_name)
+	f.write('%s\tYCAL\n' % ycal_name)
+	f.write('%s\tLCAL\n' % lcal_name)
+	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+	#f.write('%s\tTELLURIC\n' % telluric_name)
+	f.write('%s\tWAVE_BAND\n' % waveband_name)
+	f.write('%s\tOH_SPEC\n' % oh_name)
+#Grating sof now created - need to create the sky datacubes in the science directory 
+#Have access to the names of the sky files via sky_list 
+sky_frame_first = raw_dir + '/' + sky_list[0]
+sky_frame_last = raw_dir + '/' + sky_list[-1]
+#Create a sky-reconstruct sof file 
+if os.path.isfile('sky_reconstruct.sof'):
+	os.system('rm sky_reconstruct.sof')
+with open('sky_reconstruct.sof', 'a') as f:
+	f.write('%s\tSCIENCE\n' % sky_frame_first)
+	f.write('%s\tSCIENCE\n' % sky_frame_last)
+	f.write('%s\tXCAL\n' % xcal_name)
+	f.write('%s\tYCAL\n' % ycal_name)
+	f.write('%s\tLCAL\n' % lcal_name)
+	f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+	f.write('%s\tWAVE_BAND\n' % waveband_name)
+	f.write('%s\tOH_SPEC\n' % oh_name)
+print '[INFO]: Reconstructing Both sky cubes'
+#Execute the esorex reconstruct recipe to create this raw sky multi cube 
+os.system('esorex --output-dir=$KMOS_SCIENCE kmos_sci_red --no_subtract sky_reconstruct.sof')
+#The outputs from this are two file called sci_reconstructed_***.fits in the science directory
+#os.system('mv $KMOS_SCIENCE/cube_science.fits $KMOS_SCIENCE/cube_science_1.fits')
+#remove the sky_reconstruct file 
+os.system('rm sky_reconstruct.sof')
+#Now have two reconstructed files in the science directory which we combine to give the individual IFU cubes
+#first set the names of the two files 
+sky_first_combine_name = science_dir + '/sci_reconstructed_' + sky_list[0] 
+sky_last_combine_name = science_dir + '/sci_reconstructed_' + sky_list[-1]
+#check for existence of combine.sof
+if os.path.isfile('sky_combine.sof'):
+	os.system('rm sky_combine.sof')
+with open('sky_combine.sof', 'a') as f:
+	f.write('%s\n' % sky_first_combine_name)
+	f.write('%s' % sky_last_combine_name)
+print '[INFO]: Combining sky cubes'
+#Execute the KMOS recipe for combining the multi-cubes - save the output to the science directory
+os.system('esorex --output-dir=$KMOS_SCIENCE kmo_combine --method="header" --edge_nan=TRUE sky_combine.sof')
 #Everything Now in place for the multiExtractSpec method - which checks the performance of the individual frames 
 #This should deposit everything in the science directory
-pipe_methods.multiExtractSpec(sci_dir=science_dir, frameNames='corrected_object_names.txt', tracked_name='C_STARS_7656')
+pipe_methods.multiExtractSpec(sci_dir=science_dir, frameNames='corrected_object_names.txt', tracked_name='C_STARS_23991')
 #C_STARS_7656
