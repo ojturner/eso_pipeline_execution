@@ -18,7 +18,7 @@ sys.path.append('/disk1/turner/' +
 from pipelineClass import pipelineOps
 
 
-def run_pipeline(quick=False, shift=False):
+def run_pipeline(tracked_list, quick=False, shift=False):
 
     """
     Def:
@@ -44,6 +44,11 @@ def run_pipeline(quick=False, shift=False):
                 from running the pipeline
 
     Input:
+            tracked_star - name of one of the stars tracked throughout the 
+                           night by one of the ifus. This is used to look 
+                           at the seeing profile and create the optimal 
+                           integrated spectrum extraction 
+
             quick - set to true to go straight through to the
                     multi_extract_spec method at the end of the file
 
@@ -78,11 +83,11 @@ def run_pipeline(quick=False, shift=False):
                 and os.environ['KMOS_DYN_CALIBRATIONS']\
                 and os.environ['KMOS_RAW']:
 
-            print 'Directory Variables are set'
+            print '[INFO]: Directory Variables are set'
 
     except KeyError:
 
-        print 'The Directory variables are not set'
+        print '[INFO]: The Directory variables are not set'
 
         raise
 
@@ -94,7 +99,7 @@ def run_pipeline(quick=False, shift=False):
                  '\nKMOS_DYN_CALIBRATIONS: %s\n(Y/N): '
                  % os.environ['KMOS_DYN_CALIBRATIONS']) == 'Y':
 
-        print 'Continuing Calibrations and Reduction'
+        print '[INFO]: Continuing Calibrations and Reduction'
 
     else:
 
@@ -606,6 +611,10 @@ def run_pipeline(quick=False, shift=False):
 
         os.system('esorex kmos_std_star star.sof')
 
+        # now correct the telluric spectrum with the polynomial fit
+
+        pipe_methods.telluric_correct(grating_ID, dyn_dir)
+
         # At this stage we've reached the
         # end of the calibration. Ready for correcting
         # the readout column noise and performing the sub-pixel alignment
@@ -799,7 +808,8 @@ def run_pipeline(quick=False, shift=False):
         # Execute the esorex reconstruct recipe
         # to create this raw sky multi cube
         os.system('esorex --output-dir=$KMOS_SCIENCE'
-                  + ' kmos_sci_red --no_subtract sky_reconstruct.sof')
+                  + ' kmos_sci_red --no_subtract --oscan=FALSE'
+                  + ' sky_reconstruct.sof')
 
         # The outputs from this are two file called
         # sci_reconstructed_***.fits in the science directory
@@ -833,7 +843,7 @@ def run_pipeline(quick=False, shift=False):
 
         # Execute the KMOS recipe for combining the
         # multi-cubes - save the output to the science directory
-        os.system('esorex --output-dir=$KMOS_SCIENCE kmo_combine'
+        os.system('esorex --output-dir=$KMOS_SCIENCE kmos_combine'
                   + ' --method="header" --edge_nan=TRUE sky_combine.sof')
 
     # Everything Now in place for the multiExtractSpec
@@ -845,20 +855,41 @@ def run_pipeline(quick=False, shift=False):
 
         pipe_methods.multiExtractSpec(sci_dir=science_dir,
                                       frameNames='shifted_object_names.txt',
-                                      tracked_name='R33643')
+                                      tracked_list=tracked_list)
 
     else:
 
         pipe_methods.multiExtractSpec(sci_dir=science_dir,
                                       frameNames='corrected_object_names.txt',
-                                      tracked_name='R33643')
+                                      tracked_list=tracked_list)
 
+    # names of the stars for different pointings
     # C_STARS_7656 - GP1
     # C_STARS_4833
     # C_STARS_4266
     # C_STARS_26263 - GP2
-    # R39837 - SP1
-    # R33643 - SP2
+    #
+    # SSA_P1
+    # R60634 - Det_1
+    # R39837 - Det_2
+    # R47740 - Det_3
+    #
+    # SSA_P2
+    # R33643 - Det_1
+    # R26948 - Det_2
+    # R33270 - Det_3
+    #
+    # UDS - 20772
+
+ssa_p1_list = ['R60634', 'R39837', 'R47740']
+ssa_p2_list = ['R33643', 'R26948', 'R33270']
+goods_p1_h_list = ['C_STARS_7656', 'C_STARS_4833', 'C_STARS_4266']
+goods_p2_h_list = ['C_STARS_24357', 'C_STARS_23991', 'C_STARS_26263']
+goods_p1_list = ['C_STARS_7656', 'C_STARS_7656', 'C_STARS_7656']
+goods_p1_list_v2 = ['C_STARS_7656', 'C_STARS_4833', 'C_STARS_4266']
+goods_p2_list = ['C_STARS_20128', 'C_STARS_20128', 'C_STARS_23991']
+goods_p2_list_v2 = ['C_STARS_24357', 'C_STARS_23991', 'C_STARS_26263']
+est_list = ['C_STARS_7656', 'C_STARS_12280', 'C_STARS_7656']
 
 # now run the pipeline
-run_pipeline()
+run_pipeline(tracked_list=ssa_p1_list, quick=False, shift=False)
