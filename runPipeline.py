@@ -12,13 +12,18 @@ import fnmatch
 
 
 # add the class file to the PYTHONPATH
-sys.path.append('/disk1/turner/' +
+sys.path.append('/home/oturner/disk1/turner/' +
                 'PhD/KMOS/Analysis_Pipeline/Python_code/Class')
 
 from pipelineClass import pipelineOps
 
 
-def run_pipeline(tracked_list, quick=False, shift=False):
+def run_pipeline(tracked_list,
+                 quick=False,
+                 shift=False,
+                 telluric_method='standard',
+                 illum_cor='None',
+                 pix_scale=0.2):
 
     """
     Def:
@@ -56,6 +61,17 @@ def run_pipeline(tracked_list, quick=False, shift=False):
                     feeding into the science reduction pipeline. Currently
                     there doesn't seem to be a significant advantage
                     to this over the Davies algorithm
+
+            telluric_method - 'flat' - use only unit conversion, don't correct
+                                       the shape
+                              'poly' - Use polynomial fit to the full telluric
+                                        spectrum to correct the shape a bit
+                              'standard' - Use full telluric spectrum for corr
+
+            illum_cor - If illumination correction files are available
+                        specify either flat_sky or flat_sky_flat as the
+                        method. The Final science products are corrected
+                        for the illumination gradients. 
 
     Output:
             reduced data cubes for all of the raw object files
@@ -264,61 +280,61 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         if grating_ID == 'H':
             neon_name = calib_dir + '/kmos_ar_ne_list_h.fits'
             oh_name = calib_dir + '/kmos_oh_spec_h.fits'
-            bpixel_flat_name = 'badpixel_flat_HHH.fits'
-            flat_edge_name = 'flat_edge_HHH.fits'
-            master_flat_name = 'master_flat_HHH.fits'
-            xcal_name = 'xcal_HHH.fits'
-            ycal_name = 'ycal_HHH.fits'
-            lcal_name = 'lcal_HHH.fits'
-            telluric_name = 'telluric_HHH.fits'
+            bpixel_flat_name = 'BADPIXEL_FLAT_HHH.fits'
+            flat_edge_name = 'FLAT_EDGE_HHH.fits'
+            master_flat_name = 'MASTER_FLAT_HHH.fits'
+            xcal_name = 'XCAL_HHH.fits'
+            ycal_name = 'YCAL_HHH.fits'
+            lcal_name = 'LCAL_HHH.fits'
+            telluric_name = 'TELLURIC_HHH.fits'
             atmos_name = calib_dir + '/kmos_atmos_h.fits'
 
         elif grating_ID == 'YJ':
             neon_name = calib_dir + '/kmos_ar_ne_list_yj.fits'
             oh_name = calib_dir + '/kmos_oh_spec_yj.fits'
-            bpixel_flat_name = 'badpixel_flat_YJYJYJ.fits'
-            flat_edge_name = 'flat_edge_YJYJYJ.fits'
-            master_flat_name = 'master_flat_YJYJYJ.fits'
-            xcal_name = 'xcal_YJYJYJ.fits'
-            ycal_name = 'ycal_YJYJYJ.fits'
-            lcal_name = 'lcal_YJYJYJ.fits'
-            telluric_name = 'telluric_YJYJYJ.fits'
+            bpixel_flat_name = 'BADPIXEL_FLAT_YJYJYJ.fits'
+            flat_edge_name = 'FLAT_EDGE_YJYJYJ.fits'
+            master_flat_name = 'MASTER_FLAT_YJYJYJ.fits'
+            xcal_name = 'XCAL_YJYJYJ.fits'
+            ycal_name = 'YCAL_YJYJYJ.fits'
+            lcal_name = 'LCAL_YJYJYJ.fits'
+            telluric_name = 'TELLURIC_YJYJYJ.fits'
             atmos_name = calib_dir + '/kmos_atmos_yj.fits'
 
         elif grating_ID == 'IZ':
             neon_name = calib_dir + '/kmos_ar_ne_list_iz.fits'
             oh_name = calib_dir + '/kmos_oh_spec_iz.fits'
-            bpixel_flat_name = 'badpixel_flat_IZIZIZ.fits'
-            flat_edge_name = 'flat_edge_IZIZIZ.fits'
-            master_flat_name = 'master_flat_IZIZIZ.fits'
-            xcal_name = 'xcal_IZIZIZ.fits'
-            ycal_name = 'ycal_IZIZIZ.fits'
-            lcal_name = 'lcal_IZIZIZ.fits'
-            telluric_name = 'telluric_IZIZIZ.fits'
+            bpixel_flat_name = 'BADPIXEL_FLAT_IZIZIZ.fits'
+            flat_edge_name = 'FLAT_EDGE_IZIZIZ.fits'
+            master_flat_name = 'MASTER_FLAT_IZIZIZ.fits'
+            xcal_name = 'XCAL_IZIZIZ.fits'
+            ycal_name = 'YCAL_IZIZIZ.fits'
+            lcal_name = 'LCAL_IZIZIZ.fits'
+            telluric_name = 'TELLURIC_IZIZIZ.fits'
             atmos_name = calib_dir + '/kmos_atmos_iz.fits'
 
         elif grating_ID == 'HK':
             neon_name = calib_dir + '/kmos_ar_ne_list_hk.fits'
             oh_name = calib_dir + '/kmos_oh_spec_hk.fits'
-            bpixel_flat_name = 'badpixel_flat_HKHKHK.fits'
-            flat_edge_name = 'flat_edge_HKHKHK.fits'
-            master_flat_name = 'master_flat_HKHKHK.fits'
-            xcal_name = 'xcal_HKHKHK.fits'
-            ycal_name = 'ycal_HKHKHK.fits'
-            lcal_name = 'lcal_HKHKHK.fits'
-            telluric_name = 'telluric_HKHKHK.fits'
+            bpixel_flat_name = 'BADPIXEL_FLAT_HKHKHK.fits'
+            flat_edge_name = 'FLAT_EDGE_HKHKHK.fits'
+            master_flat_name = 'MASTER_FLAT_HKHKHK.fits'
+            xcal_name = 'XCAL_HKHKHK.fits'
+            ycal_name = 'YCAL_HKHKHK.fits'
+            lcal_name = 'LCAL_HKHKHK.fits'
+            telluric_name = 'TELLURIC_HKHKHK.fits'
             atmos_name = calib_dir + '/kmos_atmos_hk.fits'
 
         elif grating_ID == 'K':
             neon_name = calib_dir + '/kmos_ar_ne_list_k.fits'
             oh_name = calib_dir + '/kmos_oh_spec_k.fits'
-            bpixel_flat_name = 'badpixel_flat_KKK.fits'
-            flat_edge_name = 'flat_edge_KKK.fits'
-            master_flat_name = 'master_flat_KKK.fits'
-            xcal_name = 'xcal_KKK.fits'
-            ycal_name = 'ycal_KKK.fits'
-            lcal_name = 'lcal_KKK.fits'
-            telluric_name = 'telluric_KKK.fits'
+            bpixel_flat_name = 'BADPIXEL_FLAT_KKK.fits'
+            flat_edge_name = 'FLAT_EDGE_KKK.fits'
+            master_flat_name = 'MASTER_FLAT_KKK.fits'
+            xcal_name = 'XCAL_KKK.fits'
+            ycal_name = 'YCAL_KKK.fits'
+            lcal_name = 'LCAL_KKK.fits'
+            telluric_name = 'TELLURIC_KKK.fits'
             atmos_name = calib_dir + '/kmos_atmos_k.fits'
 
         else:
@@ -330,6 +346,8 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         reftable_name = calib_dir + '/kmos_wave_ref_table.fits'
 
         spec_lookup_name = calib_dir + '/kmos_spec_type.fits'
+
+        master_dark_name = 'MASTER_DARK.fits'
 
         # Happy that directory variables are
         # there and that they are pointing to the right place
@@ -375,29 +393,29 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         os.system('esorex kmos_dark dark.sof')
 
         # Generates the two files master_dark.fits
-        # and badpixel_dark.fits that are used
+        # and BADPIXEL_DARK.fits that are used
         # By the flatfield recipe#
         # We want to grow the badpixel mask, to account for the
         # pixels surrounding the bad ones which are also saturated
-
         print '[INFO]: Extending bad pixel mask'
 
-        pipe_methods.badPixelextend(badpmap='badpixel_dark.fits')
+        pipe_methods.badPixelextend(badpmap='BADPIXEL_DARK.fits')
 
         ###################################################
         # STEP 2: FLATFIELDING
-
         # Required .sof filename: flatfield.sof
         # in the sof require 3 flat,off dpr.type file s
         # and 18 flat,lamp files which correspond to
         # 3 files for each of the 6 different rotator angles
-        ####################################################
+        #####################################################
 
         # Play the same game with generating the .sof file
         # Write out the types of the raw files to the log
+
         os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
 
         # reload the log file and only keep those with DARK type
+
         Table = np.loadtxt('log.txt', dtype='str')
 
         tupe = zip(Table[:, 0], Table[:, 1])
@@ -405,6 +423,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         zip_names = []
 
         # Loop around searching for the keyword DARK
+
         for entry in tupe:
 
             for i in range(len(entry)):
@@ -436,10 +455,11 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
         os.system('rm log.txt')
 
-        # Also add the badpixel_dark_added.fits file to the flat.sof
+        # Also add the BADPIXEL_DARK_added.fits file to the flat.sof
+
         with open('flat.sof', 'a') as f:
 
-            f.write('badpixel_dark_Added.fits\tBADPIXEL_DARK')
+            f.write('BADPIXEL_DARK_Added.fits\tBADPIXEL_DARK')
 
         print '[INFO]: Computing flat fields for the different potato angles'
 
@@ -450,17 +470,20 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         #
         # Created .sof name: wave.sof
         # Require the products from both the flat and dark recipes
-        # badpixel_dark_Added.fits, badpixel_flat_HHH.fits,
+        # BADPIXEL_DARK_Added.fits, badpixel_flat_HHH.fits,
         # flat_edge_HHH.fits, ycal_HHH.fits, xcal_HHH.fits,
         # master_flat_HHH.fits
         # AND 6 ARC_ON, 1 ARC_OFF and 3 static calibration
         # files listed in the document
         #####################################################
+
         # Play the same game with generating the .sof file
         # Write out the types of the raw files to the log
+
         os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
 
-        # reload the log file and only keep those with DARK type
+        # reload the log file and only keep those with WAVEOFF type
+
         Table = np.loadtxt('log.txt', dtype='str')
 
         tupe = zip(Table[:, 0], Table[:, 1])
@@ -468,6 +491,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         zip_names = []
 
         # Loop around searching for the keyword DARK
+
         for entry in tupe:
 
             for i in range(len(entry)):
@@ -476,6 +500,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
                     new_entry = (entry[0],
                                  str(entry[i].replace('WAVE,OFF', 'ARC_OFF')))
+
                     zip_names.append(new_entry)
 
                 elif entry[i].find('WAVE,LAMP') != -1:
@@ -486,6 +511,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
                     zip_names.append(new_entry)
 
         # Check for existence of flat.sof
+
         if os.path.isfile('wave.sof'):
 
             os.system('rm wave.sof')
@@ -500,8 +526,8 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
         # Also add the calibration products to the wave.sof
         # This is the first time the grating dependence comes into play
-        with open('wave.sof', 'a') as f:
 
+        with open('wave.sof', 'a') as f:
             f.write('%s\tBADPIXEL_FLAT\n' % bpixel_flat_name)
             f.write('%s\tFLAT_EDGE\n' % flat_edge_name)
             f.write('%s\tMASTER_FLAT\n' % master_flat_name)
@@ -520,21 +546,144 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         #
         # Required .sof filename: illum_cor.sof
         ######################################################
-        # Leaving out the illumination correction at the moment
-        # Not an important part of the pipeline
-        # print 'Attempting to create illumination correction'#
-        # os.system('esorex kmos_illumination %s' % illum_cor_sof)####
+
+        # it may be that sky flats were not taken
+
+        if illum_cor == 'None':
+
+            print 'No illumination correction frames available'
+
+        # do the same thing with preparing the sof file
+
+        elif illum_cor == 'flat_sky':
+
+            print '[INFO]: Processing FLAT_SKY illumination correction'
+
+            os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
+
+            # reload the log file and only keep those with FLAT,SKY type
+
+            Table = np.loadtxt('log.txt', dtype='str')
+
+            tupe = zip(Table[:, 0], Table[:, 1])
+
+            zip_names = []
+
+            # Loop around searching for the keyword FLAT,SKY
+
+            for entry in tupe:
+
+                for i in range(len(entry)):
+
+                    if entry[i].find('FLAT,SKY') != -1:
+
+                        new_entry = (entry[0],
+                                     str(entry[i].replace('FLAT,SKY', 'FLAT_SKY')))
+
+                        zip_names.append(new_entry)
+
+            # Check for existence of flat.sof
+
+            if os.path.isfile('illum_corr.sof'):
+
+                os.system('rm illum_corr.sof')
+
+            with open('illum_corr.sof', 'a') as f:
+
+                for entry in zip_names:
+
+                    f.write('%s\t%s\n' % (entry[0], entry[1]))
+
+            os.system('rm log.txt')
+
+            # Also add the calibration products to the wave.sof
+            # This is the first time the grating dependence comes into play
+
+            with open('illum_corr.sof', 'a') as f:
+                f.write('%s\tMASTER_DARK\n' % master_dark_name)
+                f.write('%s\tFLAT_EDGE\n' % flat_edge_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+
+            print '[INFO]: Computing illumination correction'
+
+            os.system('esorex kmos_illumination --pix_scale=%s illum_corr.sof' % pix_scale)
+
+        elif illum_cor == 'flat_sky_flat':
+
+            print '[INFO]: Processing FLAT_SKY_FLAT illumination correction'
+
+            os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
+
+            # reload the log file and only keep those with FLAT,SKY type
+
+            Table = np.loadtxt('log.txt', dtype='str')
+
+            tupe = zip(Table[:, 0], Table[:, 1])
+
+            zip_names = []
+
+            # Loop around searching for the keyword FLAT,SKY
+
+            for entry in tupe:
+
+                for i in range(len(entry)):
+
+                    if entry[i].find('FLAT,SKY,FLAT') != -1:
+
+                        new_entry = (entry[0],
+                                     str(entry[i].replace('FLAT,SKY,FLAT', 'FLAT_SKY_FLAT')))
+
+                        zip_names.append(new_entry)
+
+            # Check for existence of flat.sof
+
+            if os.path.isfile('illum_corr.sof'):
+
+                os.system('rm illum_corr.sof')
+
+            with open('illum_corr.sof', 'a') as f:
+
+                for entry in zip_names:
+
+                    f.write('%s\t%s\n' % (entry[0], entry[1]))
+
+            os.system('rm log.txt')
+
+            # Also add the calibration products to the wave.sof
+            # This is the first time the grating dependence comes into play
+
+            with open('illum_corr.sof', 'a') as f:
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+
+            print '[INFO]: Computing illumination correction'
+
+            os.system('esorex kmos_illumination_flat --pix_scale=%s illum_corr.sof' % pix_scale)
+
+        else:
+
+            raise TypeError('Specified incorrect illumination corr format')
+
         ########################################################
         # STEP 5: STANDARD STARS
         #
         # Created .sof file star.sof
         ##########################################################
+
         print '[INFO]: Calibrating Standard Stars'
 
         # Check the raw frames directory for the standard star files
+
         os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
 
         # reload the log file and only keep those with OBJECT,SKY,STD,FLUX type
+
         Table = np.loadtxt('log.txt', dtype='str')
 
         tupe = zip(Table[:, 0], Table[:, 1])
@@ -542,6 +691,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         zip_names = []
 
         # Loop around searching for the keyword OBJECT,SKY,STD,FLUX
+
         for entry in tupe:
 
             for i in range(len(entry)):
@@ -551,10 +701,10 @@ def run_pipeline(tracked_list, quick=False, shift=False):
                     new_entry = (entry[0],
                                  str(entry[i].replace('OBJECT,SKY,STD,FLUX',
                                                       'STD')))
-
                     zip_names.append(new_entry)
 
         # Check for existence of star.sof
+
         if os.path.isfile('star.sof'):
 
             os.system('rm star.sof')
@@ -575,7 +725,6 @@ def run_pipeline(tracked_list, quick=False, shift=False):
             f.write('%s\tWAVE_BAND\n' % waveband_name)
             f.write('%s\tSPEC_TYPE_LOOKUP\n' % spec_lookup_name)
             f.write('%s\tATMOS_MODEL\n' % atmos_name)
-
         # Now there are also solar spectra
         # which can be used to aid the correction.
         # This is useful in the K, H and HK bands.
@@ -607,13 +756,33 @@ def run_pipeline(tracked_list, quick=False, shift=False):
                 f.write('%s\tSOLAR_SPEC\n' % solar_name)
 
         # star.sof now ready compute the telluric correction
+
         print '[INFO]: Computing Standard Star calibration'
 
         os.system('esorex kmos_std_star star.sof')
 
         # now correct the telluric spectrum with the polynomial fit
+        # or with the flat telluric spectrum
 
-        pipe_methods.telluric_correct(grating_ID, dyn_dir)
+        if telluric_method == 'flat':
+
+            print '[INFO:] Using flat telluric spectrum'
+
+            pipe_methods.telluric_correct_flat(grating_ID, dyn_dir)
+
+        elif telluric_method == 'poly':
+
+            print '[INFO:] Using polynomial fit for telluric'
+
+            pipe_methods.telluric_correct(grating_ID, dyn_dir)
+
+        elif telluric_method == 'standard':
+
+            print '[INFO:] Using full spectrum for telluric'
+
+        else:
+
+            raise TypeError('Invalid telluric method specified')
 
         # At this stage we've reached the
         # end of the calibration. Ready for correcting
@@ -624,7 +793,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         #
         # Required - list of object and skyfiles piped from dfits
         # called object_names.txt
-        ############################################################
+        #############################################################
 
         print '[INFO]: Correcting for readout column bias'
 
@@ -633,7 +802,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
             os.system('rm $KMOS_RAW/*Corrected.fits')
 
         pipe_methods.applyCorrection('object_names.txt',
-                                     'badpixel_dark_Added.fits',
+                                     'BADPIXEL_DARK_Added.fits',
                                      lcal_name)
 
         # Create corrected directory within the $KMOS_RAW directort
@@ -646,27 +815,54 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         os.system('mkdir %s' % Corrected_dir_name)
 
         # Move all of the newly created Corrected files into this directory
+
         os.system('mv $KMOS_RAW/*Corrected.fits %s' % Corrected_dir_name)
 
         # Also copy in the sky frames
+
         for entry in sky_list:
 
             # Doing this for ease of corrected_object file creation
+
             os.system('cp $KMOS_RAW/%s %s' % (entry, Corrected_dir_name))
 
         # Create the corrected object names file
         # Now simple to create the corrected_object_names.txt file
+
         if os.path.isfile('corrected_object_names.txt'):
 
             os.system('rm corrected_object_names.txt')
 
-        os.system('dfits $KMOS_RAW/Corrected/*.fits |'
+        # this is a bit hacky - but have to do it because the file names
+        # are becoming too long and dfits cuts them off. Again, this requires
+        # that we are in the Calibrations directory to run this script.
+        # otherwise it will not work.
+
+        os.system('dfits ../raw_frames/Corrected/*.fits |'
                   + ' fitsort ocs.arm1.type >> corrected_object_names.txt')
 
-        # NOTE THIS WORKS WELL SO LONG AS THE
-        # DIRECTORY STRUCTURE ISN'T TOO LONG
+        # now open the corrected_object_names.txt filename and fill in
+        # with the full path to the files
+
+        f = open('corrected_object_names.txt', 'r')
+
+        filedata = f.read()
+
+        f.close()
+
+        newdata = filedata.replace('../raw_frames','%s' % raw_dir)
+
+        f = open('corrected_object_names.txt', 'w')
+
+        f.write(newdata)
+
+        f.close()
+
+        # everything should be well
+
         # Now also apply the subtraction to populate
         # the /Corrected directory with these files
+
         pipe_methods.applySubtraction('corrected_object_names.txt')
 
         #####################################################
@@ -677,17 +873,20 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         # There are some specifiable things in this function.
         # Later on I'll look at adding some options and variables
         # to this part of the code using an argument parser
-        #######################################################
+        ########################################################
 
         # conditional execution of this section
         # dependent upon the shift keyword
+
         if shift:
 
             print '[INFO]: Shifting and aligning' \
                   + ' all images - this will take some time'
 
             # remove files which could cause issues should they exist
+
             if os.path.isfile('temp_shift.fits'):
+
                 os.system('rm temp*')
 
             if os.path.isfile('$KMOS_RAW/*Shifted.fits'):
@@ -695,11 +894,11 @@ def run_pipeline(tracked_list, quick=False, shift=False):
                 os.system('rm $KMOS_RAW/*Shifted.fits')
 
             # FUNCTION TO DO ADDITIONAL BAD PIXEL/COSMIC RAY REMOVAL
-            # Apply the shift
+            # Apply the shift#
 
             pipe_methods.applyShiftAllExtensionsMin(fileList='corrected_object'
                                                              + '_names.txt',
-                                                    badpmap='badpixel_dark'
+                                                    badpmap='BADPIXEL_DARK'
                                                             + '_Added.fits',
                                                     vertSegments=1,
                                                     horSegments=1,
@@ -709,6 +908,7 @@ def run_pipeline(tracked_list, quick=False, shift=False):
             # Follow the exact same steps as
             # above to create the shifted directory
             # And move the create files to here, then apply the subtraction
+
             Shifted_dir_name = raw_dir + '/Shifted'
 
             if os.path.isdir(Shifted_dir_name):
@@ -720,8 +920,8 @@ def run_pipeline(tracked_list, quick=False, shift=False):
             # Move all of the newly created Shifted files into this directory
             os.system('mv %s/*Shifted.fits %s' % (Corrected_dir_name,
                                                   Shifted_dir_name))
-
             # Also copy in the sky frames
+
             for entry in sky_list:
 
                 # Doing this for ease of Shifted_object file creation
@@ -735,16 +935,33 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
                 os.system('rm shifted_object_names.txt')
 
-            os.system('dfits $KMOS_RAW/Shifted/*.fits |'
+            os.system('dfits ../raw_frames/Shifted/*.fits |'
                       + ' fitsort ocs.arm1.type >> shifted_object_names.txt')
 
-            # NOTE THIS WORKS WELL SO LONG AS THE
-            # DIRECTORY STRUCTURE ISN'T TOO LONG
+            # now open the corrected_object_names.txt filename and fill in
+            # with the full path to the files
+
+            f = open('shifted_object_names.txt', 'r')
+
+            filedata = f.read()
+
+            f.close()
+
+            newdata = filedata.replace('../raw_frames','%s' % raw_dir)
+
+            f = open('shifted_object_names.txt', 'w')
+
+            f.write(newdata)
+
+            f.close()
+
             # Now also apply the subtraction to
             # populate the /shifted directory with these files
+
             pipe_methods.applySubtraction('shifted_object_names.txt')
 
             # Make a plot of the shift results
+
             pipe_methods.shiftPlot('Shift_Coords.txt')
 
         ########################################################
@@ -808,14 +1025,11 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         # Execute the esorex reconstruct recipe
         # to create this raw sky multi cube
         os.system('esorex --output-dir=$KMOS_SCIENCE'
-                  + ' kmos_sci_red --no_subtract --oscan=FALSE'
+                  + ' kmos_sci_red --no_subtract=TRUE --oscan=FALSE'
                   + ' sky_reconstruct.sof')
 
         # The outputs from this are two file called
         # sci_reconstructed_***.fits in the science directory
-
-        os.system('mv $KMOS_SCIENCE/cube_science.fits'
-                  + ' $KMOS_SCIENCE/cube_science_1.fits')
 
         # remove the sky_reconstruct file
         os.system('rm sky_reconstruct.sof')
@@ -824,10 +1038,10 @@ def run_pipeline(tracked_list, quick=False, shift=False):
         # directory which we combine to give the individual IFU cubes
         # first set the names of the two files
         sky_first_combine_name = science_dir + \
-            '/sci_reconstructed_' + sky_list[0]
+            '/SCI_RECONSTRUCTED_' + sky_list[0]
 
         sky_last_combine_name = science_dir + \
-            '/sci_reconstructed_' + sky_list[-1]
+            '/SCI_RECONSTRUCTED_' + sky_list[-1]
 
         # check for existence of combine.sof
         if os.path.isfile('sky_combine.sof'):
@@ -836,8 +1050,8 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
         with open('sky_combine.sof', 'a') as f:
 
-            f.write('%s\n' % sky_first_combine_name)
-            f.write('%s' % sky_last_combine_name)
+            f.write('%s\tSCI_RECONSTRUCTED\n' % sky_first_combine_name)
+            f.write('%s\tSCI_RECONSTRUCTED' % sky_last_combine_name)
 
         print '[INFO]: Combining sky cubes'
 
@@ -855,13 +1069,15 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
         pipe_methods.multiExtractSpec(sci_dir=science_dir,
                                       frameNames='shifted_object_names.txt',
-                                      tracked_list=tracked_list)
+                                      tracked_list=tracked_list,
+                                      pix_scale=pix_scale)
 
     else:
 
         pipe_methods.multiExtractSpec(sci_dir=science_dir,
                                       frameNames='corrected_object_names.txt',
-                                      tracked_list=tracked_list)
+                                      tracked_list=tracked_list,
+                                      pix_scale=pix_scale)
 
     # names of the stars for different pointings
     # C_STARS_7656 - GP1
@@ -883,13 +1099,23 @@ def run_pipeline(tracked_list, quick=False, shift=False):
 
 ssa_p1_list = ['R60634', 'R39837', 'R47740']
 ssa_p2_list = ['R33643', 'R26948', 'R33270']
-goods_p1_h_list = ['C_STARS_7656', 'C_STARS_4833', 'C_STARS_4266']
-goods_p2_h_list = ['C_STARS_24357', 'C_STARS_23991', 'C_STARS_26263']
+goods_p1_h_list = ['C_STARS_7656', 'C_STARS_7656', 'C_STARS_7656']
+goods_p2_h_list = ['C_STARS_23991', 'C_STARS_23991', 'C_STARS_23991']
 goods_p1_list = ['C_STARS_7656', 'C_STARS_7656', 'C_STARS_7656']
 goods_p1_list_v2 = ['C_STARS_7656', 'C_STARS_4833', 'C_STARS_4266']
-goods_p2_list = ['C_STARS_20128', 'C_STARS_20128', 'C_STARS_23991']
+goods_p2_list = ['C_STARS_23991', 'C_STARS_23991', 'C_STARS_23991']
 goods_p2_list_v2 = ['C_STARS_24357', 'C_STARS_23991', 'C_STARS_26263']
 est_list = ['C_STARS_7656', 'C_STARS_12280', 'C_STARS_7656']
+mason_list = ['Star_MCID_1564', 'Star_MCID_1564', 'Star_MCID_1564']
+lee_list_one = ['n55_19', 'n55_19', 'n55_19']
+lee_list_two = ['n55_19', 'n55_19', 'n55_19']
+clash_list = ['CLASH0000415', 'CLASH0000415','CLASH0000415']
+
 
 # now run the pipeline
-run_pipeline(tracked_list=ssa_p1_list, quick=False, shift=False)
+run_pipeline(tracked_list=mason_list,
+             quick=True,
+             shift=False,
+             telluric_method='standard',
+             illum_cor='flat_sky',
+             pix_scale=0.2)
