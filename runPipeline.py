@@ -12,7 +12,7 @@ import fnmatch
 
 
 # add the class file to the PYTHONPATH
-sys.path.append('/home/oturner/disk1/turner/' +
+sys.path.append('/disk2/turner/disk1/turner/' +
                 'PhD/KMOS/Analysis_Pipeline/Python_code/Class')
 
 from pipelineClass import pipelineOps
@@ -287,6 +287,7 @@ def run_pipeline(tracked_list,
             ycal_name = 'YCAL_HHH.fits'
             lcal_name = 'LCAL_HHH.fits'
             telluric_name = 'TELLURIC_HHH.fits'
+            illum_name = 'ILLUM_CORR_HHH.fits'
             atmos_name = calib_dir + '/kmos_atmos_h.fits'
 
         elif grating_ID == 'YJ':
@@ -299,6 +300,7 @@ def run_pipeline(tracked_list,
             ycal_name = 'YCAL_YJYJYJ.fits'
             lcal_name = 'LCAL_YJYJYJ.fits'
             telluric_name = 'TELLURIC_YJYJYJ.fits'
+            illum_name = 'ILLUM_CORR_YJYJYJ.fits'
             atmos_name = calib_dir + '/kmos_atmos_yj.fits'
 
         elif grating_ID == 'IZ':
@@ -311,6 +313,7 @@ def run_pipeline(tracked_list,
             ycal_name = 'YCAL_IZIZIZ.fits'
             lcal_name = 'LCAL_IZIZIZ.fits'
             telluric_name = 'TELLURIC_IZIZIZ.fits'
+            illum_name = 'ILLUM_CORR_IZIZIZ.fits'
             atmos_name = calib_dir + '/kmos_atmos_iz.fits'
 
         elif grating_ID == 'HK':
@@ -323,6 +326,7 @@ def run_pipeline(tracked_list,
             ycal_name = 'YCAL_HKHKHK.fits'
             lcal_name = 'LCAL_HKHKHK.fits'
             telluric_name = 'TELLURIC_HKHKHK.fits'
+            illum_name = 'ILLUM_CORR_HKHKHK.fits'
             atmos_name = calib_dir + '/kmos_atmos_hk.fits'
 
         elif grating_ID == 'K':
@@ -335,6 +339,7 @@ def run_pipeline(tracked_list,
             ycal_name = 'YCAL_KKK.fits'
             lcal_name = 'LCAL_KKK.fits'
             telluric_name = 'TELLURIC_KKK.fits'
+            illum_name = 'ILLUM_CORR_KKK.fits'
             atmos_name = calib_dir + '/kmos_atmos_k.fits'
 
         else:
@@ -549,7 +554,7 @@ def run_pipeline(tracked_list,
 
         # it may be that sky flats were not taken
 
-        if illum_cor == 'None':
+        if illum_cor == 'none':
 
             print 'No illumination correction frames available'
 
@@ -610,7 +615,15 @@ def run_pipeline(tracked_list,
 
             print '[INFO]: Computing illumination correction'
 
-            os.system('esorex kmos_illumination --pix_scale=%s illum_corr.sof' % pix_scale)
+            os.system('esorex kmos_illumination --pix_scale=%s illum_corr.sof' % 0.2)
+
+            # safety mechanism to make sure the pipeline keeps running
+            # check that the illum_corr file has been generated. If not
+            # Then set illum_corr parameter to none.
+
+            if not(os.path.isfile(illum_name)):
+
+                illum_cor = 'none'
 
         elif illum_cor == 'flat_sky_flat':
 
@@ -664,7 +677,19 @@ def run_pipeline(tracked_list,
 
             print '[INFO]: Computing illumination correction'
 
-            os.system('esorex kmos_illumination_flat --pix_scale=%s illum_corr.sof' % pix_scale)
+            os.system('esorex kmos_illumination_flat --pix_scale=%s illum_corr.sof' % 0.2)
+
+            # safety mechanism to make sure the pipeline keeps running
+            # check that the illum_corr file has been generated. If not
+            # Then set illum_corr parameter to none.
+
+            if not(os.path.isfile(illum_name)):
+
+                illum_cor = 'none'
+
+        # So basically if you cannot find the illum_cor thing, then 
+        # it wasn't created. Set the value to none and the rest of this
+        # pipeline should still work.
 
         else:
 
@@ -717,14 +742,34 @@ def run_pipeline(tracked_list,
 
         os.system('rm log.txt')
 
-        with open('star.sof', 'a') as f:
-            f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-            f.write('%s\tXCAL\n' % xcal_name)
-            f.write('%s\tYCAL\n' % ycal_name)
-            f.write('%s\tLCAL\n' % lcal_name)
-            f.write('%s\tWAVE_BAND\n' % waveband_name)
-            f.write('%s\tSPEC_TYPE_LOOKUP\n' % spec_lookup_name)
-            f.write('%s\tATMOS_MODEL\n' % atmos_name)
+        # adding conditionally the illumination correction if it's there
+
+        if illum_cor == 'flat_sky' or illum_cor == 'flat_sky_flat':
+
+            with open('star.sof', 'a') as f:
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tILLUM_CORR\n' % illum_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tSPEC_TYPE_LOOKUP\n' % spec_lookup_name)
+                f.write('%s\tATMOS_MODEL\n' % atmos_name)
+
+        # otherwise don't have the illumination correction name in the
+        # reductions
+
+        else:
+
+            with open('star.sof', 'a') as f:
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tSPEC_TYPE_LOOKUP\n' % spec_lookup_name)
+                f.write('%s\tATMOS_MODEL\n' % atmos_name)
+
         # Now there are also solar spectra
         # which can be used to aid the correction.
         # This is useful in the K, H and HK bands.
@@ -779,6 +824,10 @@ def run_pipeline(tracked_list,
         elif telluric_method == 'standard':
 
             print '[INFO:] Using full spectrum for telluric'
+
+        elif telluric_method == 'none':
+
+            print '[INFO:] Will not include telluric in final reduction'
 
         else:
 
@@ -986,15 +1035,65 @@ def run_pipeline(tracked_list,
 
             os.system('rm sci_reduc.sof')
 
-        with open('sci_reduc.sof', 'a') as f:
+        # If the illumination correction is specified and telluric specified - add
 
-            f.write('%s\tXCAL\n' % xcal_name)
-            f.write('%s\tYCAL\n' % ycal_name)
-            f.write('%s\tLCAL\n' % lcal_name)
-            f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-            f.write('%s\tTELLURIC\n' % telluric_name)
-            f.write('%s\tWAVE_BAND\n' % waveband_name)
-            f.write('%s\tOH_SPEC\n' % oh_name)
+        if illum_cor != 'none' and telluric_method != 'none':
+
+            print '[INFO]: Building with both telluric and illumination'
+
+            with open('sci_reduc.sof', 'a') as f:
+
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tTELLURIC\n' % telluric_name)
+                f.write('%s\tILLUM_CORR\n' % illum_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
+
+        # otherwise if telluric specified but no illum_corr
+
+        elif telluric_method != 'none' and illum_cor == 'none':
+
+            print '[INFO]: Building with telluric but no illumination'
+
+            with open('sci_reduc.sof', 'a') as f:
+
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tTELLURIC\n' % telluric_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
+
+        elif telluric_method == 'none' and illum_cor != 'none':
+
+            print '[INFO]: Building with illumination but no telluric'
+
+            with open('sci_reduc.sof', 'a') as f:
+
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tILLUM_CORR\n' % illum_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
+
+        else:
+
+            print '[INFO]: Building no telluric and no illumination'
+
+            with open('sci_reduc.sof', 'a') as f:
+
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
 
         # Grating sof now created - need to
         # create the sky datacubes in the science directory
@@ -1009,16 +1108,73 @@ def run_pipeline(tracked_list,
 
             os.system('rm sky_reconstruct.sof')
 
-        with open('sky_reconstruct.sof', 'a') as f:
+        # Same structure as above for building the .sof file
 
-            f.write('%s\tSCIENCE\n' % sky_frame_first)
-            f.write('%s\tSCIENCE\n' % sky_frame_last)
-            f.write('%s\tXCAL\n' % xcal_name)
-            f.write('%s\tYCAL\n' % ycal_name)
-            f.write('%s\tLCAL\n' % lcal_name)
-            f.write('%s\tMASTER_FLAT\n' % master_flat_name)
-            f.write('%s\tWAVE_BAND\n' % waveband_name)
-            f.write('%s\tOH_SPEC\n' % oh_name)
+        if illum_cor != 'none' and telluric_method != 'none':
+
+            print '[INFO]: Building with both telluric and illumination'
+
+            with open('sky_reconstruct.sof', 'a') as f:
+
+                f.write('%s\tSCIENCE\n' % sky_frame_first)
+                f.write('%s\tSCIENCE\n' % sky_frame_last)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tTELLURIC\n' % telluric_name)
+                f.write('%s\tILLUM_CORR\n' % illum_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
+
+        # otherwise if telluric specified but no illum_corr
+
+        elif telluric_method != 'none' and illum_cor == 'none':
+
+            print '[INFO]: Building with telluric but no illumination'
+
+            with open('sky_reconstruct.sof', 'a') as f:
+
+                f.write('%s\tSCIENCE\n' % sky_frame_first)
+                f.write('%s\tSCIENCE\n' % sky_frame_last)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tTELLURIC\n' % telluric_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
+
+        elif telluric_method == 'none' and illum_cor != 'none':
+
+            print '[INFO]: Building with illumination but no telluric'
+
+            with open('sky_reconstruct.sof', 'a') as f:
+
+                f.write('%s\tSCIENCE\n' % sky_frame_first)
+                f.write('%s\tSCIENCE\n' % sky_frame_last)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tILLUM_CORR\n' % illum_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
+
+        else:
+
+            print '[INFO]: Building no telluric and no illumination'
+
+            with open('sky_reconstruct.sof', 'a') as f:
+
+                f.write('%s\tSCIENCE\n' % sky_frame_first)
+                f.write('%s\tSCIENCE\n' % sky_frame_last)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+                f.write('%s\tOH_SPEC\n' % oh_name)
 
         print '[INFO]: Reconstructing Both sky cubes'
 
@@ -1033,6 +1189,156 @@ def run_pipeline(tracked_list,
 
         # remove the sky_reconstruct file
         os.system('rm sky_reconstruct.sof')
+
+        #####################################################
+        # STEP FINAL: ILLUMINATION CORRECTION (Again)
+        #
+        # Required .sof filename: illum_cor.sof
+        ######################################################
+
+        # need to recompute the illumination correction at the same
+        # pixel scale as the observations now (annoying)
+
+        if illum_cor == 'none':
+
+            print 'No illumination correction frames available'
+
+        # do the same thing with preparing the sof file
+
+        elif illum_cor == 'flat_sky':
+
+            print '[INFO]: Processing FLAT_SKY illumination correction'
+
+            os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
+
+            # reload the log file and only keep those with FLAT,SKY type
+
+            Table = np.loadtxt('log.txt', dtype='str')
+
+            tupe = zip(Table[:, 0], Table[:, 1])
+
+            zip_names = []
+
+            # Loop around searching for the keyword FLAT,SKY
+
+            for entry in tupe:
+
+                for i in range(len(entry)):
+
+                    if entry[i].find('FLAT,SKY') != -1:
+
+                        new_entry = (entry[0],
+                                     str(entry[i].replace('FLAT,SKY', 'FLAT_SKY')))
+
+                        zip_names.append(new_entry)
+
+            # Check for existence of flat.sof
+
+            if os.path.isfile('illum_corr.sof'):
+
+                os.system('rm illum_corr.sof')
+
+            with open('illum_corr.sof', 'a') as f:
+
+                for entry in zip_names:
+
+                    f.write('%s\t%s\n' % (entry[0], entry[1]))
+
+            os.system('rm log.txt')
+
+            # Also add the calibration products to the wave.sof
+            # This is the first time the grating dependence comes into play
+
+            with open('illum_corr.sof', 'a') as f:
+                f.write('%s\tMASTER_DARK\n' % master_dark_name)
+                f.write('%s\tFLAT_EDGE\n' % flat_edge_name)
+                f.write('%s\tMASTER_FLAT\n' % master_flat_name)
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+
+            print '[INFO]: Computing illumination correction'
+
+            os.system('esorex kmos_illumination --pix_scale=%s illum_corr.sof' % pix_scale)
+
+            # safety mechanism to make sure the pipeline keeps running
+            # check that the illum_corr file has been generated. If not
+            # Then set illum_corr parameter to none.
+
+            if not(os.path.isfile(illum_name)):
+
+                illum_cor = 'none'
+
+        elif illum_cor == 'flat_sky_flat':
+
+            print '[INFO]: Processing FLAT_SKY_FLAT illumination correction'
+
+            os.system('dfits $KMOS_RAW/*.fits | fitsort dpr.type >> log.txt')
+
+            # reload the log file and only keep those with FLAT,SKY type
+
+            Table = np.loadtxt('log.txt', dtype='str')
+
+            tupe = zip(Table[:, 0], Table[:, 1])
+
+            zip_names = []
+
+            # Loop around searching for the keyword FLAT,SKY
+
+            for entry in tupe:
+
+                for i in range(len(entry)):
+
+                    if entry[i].find('FLAT,SKY,FLAT') != -1:
+
+                        new_entry = (entry[0],
+                                     str(entry[i].replace('FLAT,SKY,FLAT', 'FLAT_SKY_FLAT')))
+
+                        zip_names.append(new_entry)
+
+            # Check for existence of flat.sof
+
+            if os.path.isfile('illum_corr.sof'):
+
+                os.system('rm illum_corr.sof')
+
+            with open('illum_corr.sof', 'a') as f:
+
+                for entry in zip_names:
+
+                    f.write('%s\t%s\n' % (entry[0], entry[1]))
+
+            os.system('rm log.txt')
+
+            # Also add the calibration products to the wave.sof
+            # This is the first time the grating dependence comes into play
+
+            with open('illum_corr.sof', 'a') as f:
+                f.write('%s\tXCAL\n' % xcal_name)
+                f.write('%s\tYCAL\n' % ycal_name)
+                f.write('%s\tLCAL\n' % lcal_name)
+                f.write('%s\tWAVE_BAND\n' % waveband_name)
+
+            print '[INFO]: Computing illumination correction'
+
+            os.system('esorex kmos_illumination_flat --pix_scale=%s illum_corr.sof' % pix_scale)
+
+            # safety mechanism to make sure the pipeline keeps running
+            # check that the illum_corr file has been generated. If not
+            # Then set illum_corr parameter to none.
+
+            if not(os.path.isfile(illum_name)):
+
+                illum_cor = 'none'
+
+        # So basically if you cannot find the illum_cor thing, then 
+        # it wasn't created. Set the value to none and the rest of this
+        # pipeline should still work.
+
+        else:
+
+            raise TypeError('Specified incorrect illumination corr format')
 
         # Now have two reconstructed files in the science
         # directory which we combine to give the individual IFU cubes
@@ -1097,6 +1403,9 @@ def run_pipeline(tracked_list,
     #
     # UDS - 20772
 
+
+# KDS and Assorted
+
 ssa_p1_list = ['R60634', 'R39837', 'R47740']
 ssa_p2_list = ['R33643', 'R26948', 'R33270']
 goods_p1_h_list = ['C_STARS_7656', 'C_STARS_7656', 'C_STARS_7656']
@@ -1109,13 +1418,33 @@ est_list = ['C_STARS_7656', 'C_STARS_12280', 'C_STARS_7656']
 mason_list = ['Star_MCID_1564', 'Star_MCID_1564', 'Star_MCID_1564']
 lee_list_one = ['n55_19', 'n55_19', 'n55_19']
 lee_list_two = ['n55_19', 'n55_19', 'n55_19']
-clash_list = ['CLASH0000415', 'CLASH0000415','CLASH0000415']
+klens_c1_list = ['CLASH0000415', 'CLASH0000415','CLASH0000415']
+klens_c2_h_list = ['CLASH0000658', 'CLASH0000658','CLASH0000658']
+klens_c2_k_list = ['LABOCAS2', 'LABOCAS2','LABOCAS2']
+klens_c3_k_list = ['CLASH0000523', 'CLASH0000523','CLASH0000523']
+klens_c3_h_list = ['peaker_42', 'peaker_42','peaker_42']
+klens_c4_k_list = ['HFF10002762', 'HFF10002762','HFF10002762']
+klens_c4_h_list = ['HFF10002747', 'HFF10002747','HFF10002747']
+
+# KLP
+
+# GOODS 
+klp_goods_p1 = ['GS4str_psf_38671','GS4str_24435','C_STARS_17261']
+klp_goods_p2 = ['GS3str_31679','C_STARS_16422','C_STARS_20128']
+
+# COSMOS
+klp_cosmos_p1 = ['COS4str_09663','COS4str_02828','COS4str_09744']
+
+# MAC
+klp_mac_p1 = ['c_star_4369', 'c_star_8080', 'c_star_5663']
 
 
 # now run the pipeline
-run_pipeline(tracked_list=mason_list,
-             quick=True,
+run_pipeline(tracked_list=goods_p1_list,
+             quick=False,
              shift=False,
-             telluric_method='standard',
-             illum_cor='flat_sky',
-             pix_scale=0.2)
+             telluric_method='none',
+             illum_cor='none',
+             pix_scale=0.1)
+
+# dfits *.fits | fitsort dpr.type ocs.arm1.type ins.filt1.id det.seq1.dit
